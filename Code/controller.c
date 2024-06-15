@@ -208,6 +208,7 @@
 			// Start async printjob conversion
 			if(fork() == 0){
 				gpdl_parse_printjob(pjob_outp_file, filename);
+				system("print")
 			}
 
 			printf("[*] FINSIEHD\tReceived print job %s.%s\n",

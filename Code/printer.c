@@ -35,21 +35,39 @@ struct Stepper {
     pid_t move_pid;
 };
 
-void servo_move(struct Stepper stepper, int speed_dps, int angle)
+struct Stepper motor_page;
+struct Stepper motor_feeder;
+struct Stepper motor_head;
+
+void stepper_move(struct Stepper stepper, int speed_dps, int angle)
 {
-    int steps = (int)((abs(angle) / 360.0) * steps_per_revolution);
-    digitalWrite(stepper.gpio_direction, angle > 0);
+    // stop previous movement
+    // this is a safety and should not be used, it is better to wait for motion to finish
+    // so as not to break to travel distance calculations
+    if (stepper.move_pid != 0) kill(stepper.move_pid, SIGKILL);
 
-    // Calculate the step delay in microseconds
-    // Speed is given in degrees per second
-    float step_delay = (1.0 / ((speed_dps / 360.0) * steps_per_revolution)) * 1e6;
+    pid_t pid;
+    if (pid = fork() == 0) {
+        // child porcess running the stepper control
 
-    // Generate the pulses to move the stepper motor
-    for (int i = 0; i < steps; i++) {
-        digitalWrite(stepper.gpio_step, 1);
-        usleep(step_delay / 2);
-        digitalWrite(stepper.gpio_step, 0);
-        usleep(step_delay / 2);
+        int steps = (int)((abs(angle) / 360.0) * steps_per_revolution);
+        digitalWrite(stepper.gpio_direction, angle > 0);
+
+        // Calculate the step delay in microseconds
+        // Speed is given in degrees per second
+        float step_delay = (1.0 / ((speed_dps / 360.0) * steps_per_revolution)) * 1e6;
+
+        // Generate the pulses to move the stepper motor
+        for (int i = 0; i < steps; i++) {
+            digitalWrite(stepper.gpio_step, 1);
+            usleep(step_delay / 2);
+            digitalWrite(stepper.gpio_step, 0);
+            usleep(step_delay / 2);
+        }
+    }
+    else {
+        //parent process continuing
+        stepper.move_pid = pid;
     }
 }
 
@@ -99,6 +117,13 @@ int setup()
     digitalWrite(f5,0);
     pinMode(dclk, OUTPUT);
     digitalWrite(dclk,0);
+
+    motor_feeder.gpio_direction = m1_dir;
+    motor_feeder.gpio_step = m1_step;
+    motor_page.gpio_direction = m2_dir;
+    motor_page.gpio_step = m2_step;
+    motor_head.gpio_direction = m3_dir;
+    motor_head.gpio_step = m3_step;
     
 }
 
@@ -107,18 +132,8 @@ int main(int argc, char *argv[])
     if (setup() < 0) {
         return 1;
     }
-    
-    struct Stepper motor_picker;
-    motor_picker.gpio_direction = m1_dir;
-    motor_picker.gpio_step = m1_step;
 
-    struct Stepper motor_feeder;
-    motor_feeder.gpio_direction = m2_dir;
-    motor_feeder.gpio_step = m2_step;
-
-    struct Stepper motor_head;
-    motor_head.gpio_direction = m3_dir;
-    motor_head.gpio_step = m3_step;
-
-
+    stepper_move(motor_feeder, 120, 360);
+    stepper_move(motor_head, 120, 360);
+    stepper_move(motor_page, 120, 360);
 }

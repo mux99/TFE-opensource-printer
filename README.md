@@ -78,4 +78,6 @@ sudo rmmod usb_f_printer
 
 
 <!-- wget "https://github.com/WiringPi/WiringPi/releases/download/3.6/wiringpi_3.6_arm64.deb"
- sudo dpkg -i wiringpi_3.6_arm64.deb -->
+ sudo dpkg -i wiringpi_3.6_arm64.deb 
+ 
+ gcc -o test test.c -l wiringPi-->

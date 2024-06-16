@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 #include <math.h>
 #include <wiringPi.h>
@@ -64,11 +65,19 @@ void stepper_move(struct Stepper stepper, int speed_dps, int angle)
             digitalWrite(stepper.gpio_step, 0);
             usleep(step_delay / 2);
         }
+
+        exit(0);
     }
     else {
         //parent process continuing
         stepper.move_pid = pid;
     }
+}
+
+int wait_stepper(struct Stepper *stepper)
+{
+    int out;
+    waitpid(stepper->move_pid, &out, 0);
 }
 
 int setup()
@@ -133,7 +142,18 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    printf("start - forward \n");
     stepper_move(motor_feeder, 120, 360);
     stepper_move(motor_head, 120, 360);
     stepper_move(motor_page, 120, 360);
+
+    printf("-wait-\n");
+    wait_stepper(&motor_feeder);
+    wait_stepper(&motor_head);
+    wait_stepper(&motor_page);
+
+    printf("start - reverse\n");
+    stepper_move(motor_feeder, 120, -360);
+    stepper_move(motor_head, 120, -360);
+    stepper_move(motor_page, 120, -360);
 }

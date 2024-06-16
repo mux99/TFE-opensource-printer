@@ -111,6 +111,8 @@
 			outp_filename, GPDL_FILE_EXTENSION);
 
 	// Kill child process
+	system("/home/mux/test");
+
 	pclose(systemOutput);
 	_exit(0);
   }
@@ -208,7 +210,6 @@
 			// Start async printjob conversion
 			if(fork() == 0){
 				gpdl_parse_printjob(pjob_outp_file, filename);
-				system("print")
 			}
 
 			printf("[*] FINSIEHD\tReceived print job %s.%s\n",
